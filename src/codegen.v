@@ -87,7 +87,6 @@ pub fn (mut c Cgen_linux64) write_asm(output string) ! {
 }
 
 pub fn (c Cgen_linux64) assemble(output string) ! {
-	println("asm name: ${c.asm_fname}");
 	os.system("fasm ${c.asm_fname}");
 }
 
