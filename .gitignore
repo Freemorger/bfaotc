@@ -8,6 +8,7 @@ bfaotc
 *.dll
 *.asm
 example
+helloworld
 
 # Ignore binary output folders
 bin/

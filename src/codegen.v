@@ -52,19 +52,45 @@ pub fn new_cgen_lin64() &Cgen_linux64 {
 pub fn (mut c Cgen_linux64) compile(toks []Tok) ! {
 	c.prepare_lin64_asm();
 
-	for t in toks {
+	mut i := 0;
+	for (i < toks.len) {
+		t := toks[i];
 		match t {
 			.r_ang_br {
-				c.buf << "inc rbx"
+				ctr := count_streak(toks, t, i);
+				if ctr > 1 {
+					i += (ctr - 1);
+					c.buf << "add rbx, ${ctr}"
+				} else {
+					c.buf << "inc rbx"
+				}
 			}
 			.l_ang_br {
-				c.buf << "dec rbx"
+				ctr := count_streak(toks, t, i);
+				if ctr > 1 {
+					i += (ctr - 1);
+					c.buf << "sub rbx, ${ctr}"
+				} else {
+					c.buf << "dec rbx"
+				}
 			}
 			.plus {
-				c.buf << "inc byte [rbx]"
+				ctr := count_streak(toks, t, i);
+				if ctr > 1 {
+					i += (ctr - 1);
+					c.buf << "add byte [rbx], ${ctr}"
+				} else {
+					c.buf << "inc byte [rbx]"
+				}
 			}
 			.minus {
-				c.buf << "dec byte [rbx]"
+				ctr := count_streak(toks, t, i);
+				if ctr > 1 {
+					i += (ctr - 1);
+					c.buf << "sub byte [rbx], ${ctr}"
+				} else {
+					c.buf << "dec byte [rbx]"
+				}
 			}
 			.dot {
 				c.buf << "mov rax, 1" // sys_write
@@ -91,7 +117,7 @@ pub fn (mut c Cgen_linux64) compile(toks []Tok) ! {
 			}
 			.r_br {
 				if c.loops_stack.len == 0 {
-					panic("${t}: attempting to close loop, but it
+					panic("${t}: attempting to close loop, but it\
 						never started");
 				}
 				num := c.loops_stack.pop();
@@ -99,9 +125,22 @@ pub fn (mut c Cgen_linux64) compile(toks []Tok) ! {
 				c.buf << "loop_${num}_exit:"
 			}
 		}
+		i += 1;
 	}
 
 	c.finalize_lin64_asm();
+}
+
+fn count_streak(toks []Tok, want Tok, cur int) int {
+	mut ctr := 1; // streak
+	for j in (cur + 1)..toks.len {
+		if toks[j] == want {
+			ctr += 1;
+		} else {
+			break
+		}
+	}
+	return ctr
 }
 
 pub fn (mut c Cgen_linux64) write_asm(output string) ! {
