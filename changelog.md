@@ -1,0 +1,4 @@
+- updated readme
+- removed sys_sync
+- added support for comments (use semicolon)
+- added comma support

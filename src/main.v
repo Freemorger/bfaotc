@@ -44,7 +44,12 @@ c -target x86_64_linux input.bf");
 
 	mut codegen := get_codegen(target);
 	codegen.compile(toks)!;
-	codegen.write_asm("${input_fname.replace(".bf", ".asm")}")!;
+	asm_fname := "${input_fname.replace(".bf", ".asm")}";
+	codegen.write_asm(asm_fname)!;
 	codegen.assemble("${input_fname.replace(".bf", "")}")!;
+
+	$if prod {
+		os.rm(asm_fname)!;
+	}
 }
 

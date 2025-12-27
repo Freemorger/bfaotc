@@ -2,10 +2,12 @@ module main
 import os
 
 pub fn lex(fname string) ![]Tok {
-	f_contents := os.read_file(fname)!;
+	f_contents := os.read_file(fname)!.trim_space();
 	mut res := []Tok;
 
-	for ch in f_contents.trim_space() {
+	mut i := 0;
+	for (i < f_contents.len) {
+		ch := f_contents[i];
 		match ch.ascii_str() {
 			'>' {res << Tok.r_ang_br}
 			'<' {res << Tok.l_ang_br}
@@ -15,8 +17,21 @@ pub fn lex(fname string) ![]Tok {
 			',' {res << Tok.comma}
 			'[' {res << Tok.l_br}
 			']' {res << Tok.r_br}
-			else {eprintln("Unexpected char ${ch.ascii_str()}")}
+			';' {
+				mut j := i;
+				for (j < f_contents.len) {
+					newch := f_contents[j].ascii_str();
+					if newch == '\n' {
+						break
+					}
+					j += 1;
+				}
+				i = j;
+			}
+			'\n', ' ' {}
+			else {eprintln("Unexpected char ${ch}")}
 		}
+		i += 1;
 	}
 
 	return res

@@ -16,7 +16,7 @@ pub enum Targets {
 
 pub fn match_target(name string) ?Targets {
 	match name.to_lower().trim_space() {
-		"x86_64_linux" {return Targets.x86_64_linux}
+		"x86_64_linux", "x86_64-linux" {return Targets.x86_64_linux}
 		else {
 			eprintln("Unknown target ${name.to_lower()}");
 			return none
@@ -36,12 +36,16 @@ pub struct Cgen_linux64 {
 mut:
 	buf	[]string
 	asm_fname string
+	loops_stack []int
+	ls_ctr	int
 }
 
 pub fn new_cgen_lin64() &Cgen_linux64 {
 	return &Cgen_linux64 {
 		asm_fname: ""
 		buf: []string{}
+		loops_stack: []int{}
+		ls_ctr : 0
 	}
 }
 
@@ -68,12 +72,31 @@ pub fn (mut c Cgen_linux64) compile(toks []Tok) ! {
 				c.buf << "lea rsi, [rbx]"
 				c.buf << "mov rdx, 1" // 1 byte
 				c.buf << "syscall"
-
-				c.buf << "mov rax, 36" // sys_sync
+			}
+			.comma {
+				c.buf << "xor rax, rax" // 0 - sys_read
+				c.buf << "xor rdi, rdi" // 0 - stdin
+				c.buf << "lea rsi, [rbx]"
+				c.buf << "mov rdx, 1" // read 1 byte
 				c.buf << "syscall"
 			}
-			else {
-				eprintln("unimplemented.. yet")
+			.l_br {
+				c.buf << "loop_${c.ls_ctr}:"
+				c.buf << "mov al, byte [rbx]"
+				c.buf << "test al, al"
+				c.buf << "jz loop_${c.ls_ctr}_exit"
+
+				c.loops_stack << c.ls_ctr
+				c.ls_ctr += 1;
+			}
+			.r_br {
+				if c.loops_stack.len == 0 {
+					panic("${t}: attempting to close loop, but it
+						never started");
+				}
+				num := c.loops_stack.pop();
+				c.buf << "jmp loop_${num}"
+				c.buf << "loop_${num}_exit:"
 			}
 		}
 	}
