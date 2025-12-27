@@ -1,0 +1,2 @@
+- implement comma, braces
+- maybe create print buffer and print it on the end of the program run
